@@ -5,6 +5,7 @@ import cn.ocoop.framework.jdbc.connection.RoutingConnection;
 import cn.ocoop.framework.jdbc.exception.MergedSQLException;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
+import cn.ocoop.framework.jdbc.parse.SqlParser;
 import cn.ocoop.framework.jdbc.resultset.ResultSetWrapper;
 import cn.ocoop.framework.jdbc.spay.AbstractSpayStatement;
 import com.google.common.collect.Lists;
@@ -25,6 +26,7 @@ public class RoutingStatement extends AbstractSpayStatement {
     protected MethodInvocation createMethodInvocation;
     protected MethodInvocationRecorder invocationRecorder = new MethodInvocationRecorder();
     protected boolean closed = false;
+    protected String sql;
     private int maxRows = -1;
     private int queryTimeout = 0;
     private int fetchSize = 0;
@@ -52,6 +54,8 @@ public class RoutingStatement extends AbstractSpayStatement {
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
+        this.sql = sql;
+
         List<ResultSet> resultSets = Lists.newArrayList();
 
         List<ConnectionWrapper> connections = routingConnection.route(sql);
@@ -65,10 +69,12 @@ public class RoutingStatement extends AbstractSpayStatement {
                 resultSets.add(resultSet);
             }
         }
-        return resultSets.size() > 0 ? new ResultSetWrapper(resultSets).proxy() : null;
+        return resultSets.size() > 0 ? new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy() : null;
     }
 
     private int executeUpdate(String sql, Function<Statement, Integer> update) {
+        this.sql = sql;
+
         Long result = 0L;
         List<ConnectionWrapper> connections = routingConnection.route(sql);
         for (ConnectionWrapper connection : connections) {
@@ -127,6 +133,8 @@ public class RoutingStatement extends AbstractSpayStatement {
     }
 
     private boolean execute(String sql, Function<Statement, Boolean> execute) {
+        this.sql = sql;
+
         boolean isQuerySql = true;
         List<ConnectionWrapper> connections = routingConnection.route(sql);
         for (ConnectionWrapper connection : connections) {
@@ -175,16 +183,13 @@ public class RoutingStatement extends AbstractSpayStatement {
 
     @Override
     public boolean execute(String sql) throws SQLException {
-        boolean isQuerySql = true;
-        List<ConnectionWrapper> connections = routingConnection.route(sql);
-        for (ConnectionWrapper connection : connections) {
-            Statement statement = (Statement) createMethodInvocation.invoke(connection);
-            invocationRecorder.replay(statement);
-            statements.add(statement);
-            log.debug("数据源:{},执行sql:{}", connection.getDataSource().getName(), sql);
-            isQuerySql = statement.execute(sql) && isQuerySql;
-        }
-        return isQuerySql;
+        return execute(sql, statement -> {
+            try {
+                return statement.execute(sql);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
@@ -293,7 +298,7 @@ public class RoutingStatement extends AbstractSpayStatement {
             }
 
         }
-        return resultSets.size() > 0 ? new ResultSetWrapper(resultSets).proxy() : null;
+        return resultSets.size() > 0 ? new ResultSetWrapper(SqlParser.parseOrderBy(this.sql), resultSets).proxy() : null;
     }
 
     @Override
