@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.parse.select;
+package cn.ocoop.framework.parse.select;
 
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
@@ -31,6 +31,6 @@ public class SelectItemVisitor extends MySqlASTVisitorAdapter {
             }
 
         }
-        return true;
+        return false;
     }
 }

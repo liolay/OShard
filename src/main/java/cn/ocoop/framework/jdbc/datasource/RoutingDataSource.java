@@ -1,17 +1,23 @@
 package cn.ocoop.framework.jdbc.datasource;
 
+import cn.ocoop.framework.jdbc.WrapperImpl;
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
-import cn.ocoop.framework.jdbc.sql.WrapperImpl;
+import cn.ocoop.framework.parse.SqlParser;
+import cn.ocoop.framework.parse.shard.algorithm.ShardAlgorithm;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -23,35 +29,14 @@ public class RoutingDataSource extends WrapperImpl implements DataSource {
     private Map<String, DataSource> dataSources;
     private MethodInvocationRecorder invocationRecorder = new MethodInvocationRecorder();
     private int loginTimeout = 0;
+    private ShardAlgorithm shardAlgorithm;
 
-    public RoutingDataSource(Map<String, DataSource> dataSources) {
+    public RoutingDataSource(Map<String, DataSource> dataSources, Set<String> shardColumn, ShardAlgorithm shardAlgorithm) {
         this.dataSources = dataSources;
+        SqlParser.setShardColumn(shardColumn);
+        this.shardAlgorithm = shardAlgorithm;
     }
 
-
-    public List<NamedDataSource> route(String staticSql) {
-        List<NamedDataSource> targetDataSources = Lists.newArrayList();
-        for (Map.Entry<String, DataSource> dataSourceEntry : dataSources.entrySet()) {
-            targetDataSources.add(new NamedDataSource(dataSourceEntry.getKey(), dataSourceEntry.getValue()));
-        }
-        return targetDataSources;
-    }
-
-    public List<NamedDataSource> route(Statement statement) {
-        List<NamedDataSource> targetDataSources = Lists.newArrayList();
-        for (Map.Entry<String, DataSource> dataSourceEntry : dataSources.entrySet()) {
-            targetDataSources.add(new NamedDataSource(dataSourceEntry.getKey(), dataSourceEntry.getValue()));
-        }
-        return targetDataSources;
-    }
-
-    public List<NamedDataSource> route(PreparedStatement preparedStatement) {
-        List<NamedDataSource> targetDataSources = Lists.newArrayList();
-        for (Map.Entry<String, DataSource> dataSourceEntry : dataSources.entrySet()) {
-            targetDataSources.add(new NamedDataSource(dataSourceEntry.getKey(), dataSourceEntry.getValue()));
-        }
-        return targetDataSources;
-    }
 
     @Override
     public Connection getConnection() throws SQLException {
@@ -100,4 +85,12 @@ public class RoutingDataSource extends WrapperImpl implements DataSource {
         }
     }
 
+    public List<NamedDataSource> route(Map<String, Object> shardColumn_value) {
+        List<NamedDataSource> routedDataSource = Lists.newArrayList();
+        Collection<String> dataSourceNames = shardAlgorithm.shard(dataSources.keySet(), shardColumn_value);
+        for (String dataSourceName : dataSourceNames) {
+            routedDataSource.add(new NamedDataSource(dataSourceName, dataSources.get(dataSourceName)));
+        }
+        return routedDataSource;
+    }
 }

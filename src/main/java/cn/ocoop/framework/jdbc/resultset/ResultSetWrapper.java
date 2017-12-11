@@ -1,6 +1,6 @@
 package cn.ocoop.framework.jdbc.resultset;
 
-import cn.ocoop.framework.jdbc.parse.order.OrderItem;
+import cn.ocoop.framework.parse.order.OrderByItem;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationHandler;
@@ -8,10 +8,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * Created by liolay on 2017/12/7.
@@ -20,16 +17,16 @@ import java.util.Queue;
 public class ResultSetWrapper extends AbstractResultSet implements InvocationHandler {
     private boolean isClosed = false;
     private List<ResultSet> rss;
-    private OrderResultSet rs;
-    private Queue<OrderResultSet> resultSetQueue = null;
+    private OrderedResultSet rs;
+    private Queue<OrderedResultSet> resultSetQueue = null;
     private boolean pollNew = false;
 
-    public ResultSetWrapper(Map<Integer, OrderItem> index_OrderItem, List<ResultSet> resultSets) throws SQLException {
+    public ResultSetWrapper(List<OrderByItem> orderByItems, List<ResultSet> resultSets) throws SQLException {
         this.rss = resultSets;
         this.resultSetQueue = new PriorityQueue<>(resultSets.size());
-
         for (ResultSet resultSet : this.rss) {
-            this.resultSetQueue.offer(new OrderResultSet(resultSet, index_OrderItem));
+
+            this.resultSetQueue.offer(new OrderedResultSet(resultSet, orderByItems));
         }
         this.rs = this.resultSetQueue.poll();
     }
@@ -40,12 +37,11 @@ public class ResultSetWrapper extends AbstractResultSet implements InvocationHan
             this.rs = this.resultSetQueue.poll();
         }
         if (this.rs == null) return false;
+        pollNew = true;
         if (this.rs.next()) {
             this.resultSetQueue.offer(this.rs);
-            pollNew = true;
             return true;
         }
-        pollNew = true;
         return next();
     }
 

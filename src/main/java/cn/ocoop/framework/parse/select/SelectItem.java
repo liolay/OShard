@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.parse.select;
+package cn.ocoop.framework.parse.select;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.util;
+package cn.ocoop.framework.util;
 
 import java.lang.reflect.Method;
 

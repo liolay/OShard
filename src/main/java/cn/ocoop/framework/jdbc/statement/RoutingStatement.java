@@ -5,15 +5,18 @@ import cn.ocoop.framework.jdbc.connection.RoutingConnection;
 import cn.ocoop.framework.jdbc.exception.MergedSQLException;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
-import cn.ocoop.framework.jdbc.parse.SqlParser;
 import cn.ocoop.framework.jdbc.resultset.ResultSetWrapper;
 import cn.ocoop.framework.jdbc.spay.AbstractSpayStatement;
+import cn.ocoop.framework.parse.SqlParser;
+import cn.ocoop.framework.parse.shard.extract.value.ShardValue;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.*;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -52,13 +55,24 @@ public class RoutingStatement extends AbstractSpayStatement {
         this.resultSetHoldability = resultSetHoldability;
     }
 
+    /**
+     * @return key:shardKey,value:shardValue
+     */
+    private Map<String, Object> analyzeShardValue() {
+        Map<String, Object> shardColumn_value = Maps.newHashMap();
+        Map<String, ShardValue> name_value = SqlParser.analyzeShard(sql);
+        for (Map.Entry<String, ShardValue> shardItem : name_value.entrySet()) {
+            shardColumn_value.put(shardItem.getKey(), shardItem.getValue().getValue());
+        }
+        return shardColumn_value;
+    }
+
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
         this.sql = sql;
 
         List<ResultSet> resultSets = Lists.newArrayList();
-
-        List<ConnectionWrapper> connections = routingConnection.route(sql);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             Statement statement = (Statement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);
@@ -69,14 +83,16 @@ public class RoutingStatement extends AbstractSpayStatement {
                 resultSets.add(resultSet);
             }
         }
-        return resultSets.size() > 0 ? new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy() : null;
+        if (resultSets.size() <= 0) return null;
+        if (resultSets.size() == 1) return resultSets.get(0);
+        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
     }
 
     private int executeUpdate(String sql, Function<Statement, Integer> update) {
         this.sql = sql;
 
         Long result = 0L;
-        List<ConnectionWrapper> connections = routingConnection.route(sql);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             Statement statement = (Statement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);
@@ -136,7 +152,7 @@ public class RoutingStatement extends AbstractSpayStatement {
         this.sql = sql;
 
         boolean isQuerySql = true;
-        List<ConnectionWrapper> connections = routingConnection.route(sql);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             Statement statement = (Statement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);
@@ -298,7 +314,9 @@ public class RoutingStatement extends AbstractSpayStatement {
             }
 
         }
-        return resultSets.size() > 0 ? new ResultSetWrapper(SqlParser.parseOrderBy(this.sql), resultSets).proxy() : null;
+        if (resultSets.size() <= 0) return null;
+        if (resultSets.size() == 1) return resultSets.get(0);
+        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
     }
 
     @Override

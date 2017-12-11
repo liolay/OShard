@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.parse.exception;
+package cn.ocoop.framework.parse.exception;
 
 /**
  * Created by liolay on 2017/12/8.

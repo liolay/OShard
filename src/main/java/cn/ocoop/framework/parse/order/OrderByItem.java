@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.parse.order;
+package cn.ocoop.framework.parse.order;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,14 +7,14 @@ import lombok.Setter;
  * Created by liolay on 2017/12/8.
  */
 @Getter
-public class OrderItem {
+public class OrderByItem {
+    @Setter
+    private int index;
     private String ownerName;
     private String columnName;
-    private OrderTypeEnum orderType;
-    @Setter
-    private Comparable value;
+    private OrderByTypeEnum orderType;
 
-    public OrderItem(String ownerName, String columnName, OrderTypeEnum orderType) {
+    public OrderByItem(String ownerName, String columnName, OrderByTypeEnum orderType) {
         this.ownerName = ownerName;
         this.columnName = columnName;
         this.orderType = orderType;

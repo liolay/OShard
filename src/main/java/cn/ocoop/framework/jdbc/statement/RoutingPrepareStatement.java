@@ -3,10 +3,13 @@ package cn.ocoop.framework.jdbc.statement;
 import cn.ocoop.framework.jdbc.connection.ConnectionWrapper;
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
 import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
-import cn.ocoop.framework.jdbc.parse.SqlParser;
 import cn.ocoop.framework.jdbc.resultset.ResultSetWrapper;
 import cn.ocoop.framework.jdbc.spay.AbstractSpayPrepareStatement;
+import cn.ocoop.framework.parse.SqlParser;
+import cn.ocoop.framework.parse.shard.extract.value.DynamicShardValue;
+import cn.ocoop.framework.parse.shard.extract.value.ShardValue;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +71,7 @@ public class RoutingPrepareStatement extends AbstractSpayPrepareStatement {
     public ResultSet executeQuery() throws SQLException {
         List<ResultSet> resultSets = Lists.newArrayList();
 
-        List<ConnectionWrapper> connections = routingConnection.route(this);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             PreparedStatement statement = (PreparedStatement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);
@@ -81,14 +84,15 @@ public class RoutingPrepareStatement extends AbstractSpayPrepareStatement {
             }
         }
 
-        //TODO merge resultSet
-        return resultSets.size() > 0 ? new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy() : null;
+        if (resultSets.size() <= 0) return null;
+        if (resultSets.size() == 1) return resultSets.get(0);
+        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
     }
 
     @Override
     public int executeUpdate() throws SQLException {
         Long result = 0L;
-        List<ConnectionWrapper> connections = routingConnection.route(this);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             PreparedStatement statement = (PreparedStatement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);
@@ -100,11 +104,28 @@ public class RoutingPrepareStatement extends AbstractSpayPrepareStatement {
         return result.intValue();
     }
 
+    /**
+     * @return key:shardKey,value:shardValue
+     */
+    private Map<String, Object> analyzeShardValue() {
+        Map<String, Object> shardColumn_value = Maps.newHashMap();
+        Map<String, ShardValue> name_value = SqlParser.analyzeShard(sql);
+        for (Map.Entry<String, ShardValue> shardItem : name_value.entrySet()) {
+            Object shardValue = shardItem.getValue().getValue();
+            if (shardItem.getValue() instanceof DynamicShardValue) {
+                //noinspection SuspiciousMethodCalls
+                shardValue = parameters.get((int) shardItem.getValue().getValue() + 1);
+            }
+            shardColumn_value.put(shardItem.getKey(), shardValue);
+        }
+        return shardColumn_value;
+    }
+
     @Override
     public boolean execute() throws SQLException {
 
         boolean isQuerySql = true;
-        List<ConnectionWrapper> connections = routingConnection.route(this);
+        List<ConnectionWrapper> connections = routingConnection.route(analyzeShardValue());
         for (ConnectionWrapper connection : connections) {
             PreparedStatement statement = (PreparedStatement) createMethodInvocation.invoke(connection);
             invocationRecorder.replay(statement);

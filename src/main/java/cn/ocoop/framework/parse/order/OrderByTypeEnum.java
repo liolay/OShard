@@ -1,12 +1,12 @@
-package cn.ocoop.framework.jdbc.parse.order;
+package cn.ocoop.framework.parse.order;
 
 /**
  * Created by liolay on 2017/12/8.
  */
-public enum OrderTypeEnum {
+public enum OrderByTypeEnum {
     ASC, DESC;
 
-    public static OrderTypeEnum value(String orderBy) {
+    public static OrderByTypeEnum value(String orderBy) {
         if (DESC.equalsIgnoreCase(orderBy)) return DESC;
         return ASC;
     }

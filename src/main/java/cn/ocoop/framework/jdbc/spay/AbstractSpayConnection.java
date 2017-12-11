@@ -1,6 +1,6 @@
 package cn.ocoop.framework.jdbc.spay;
 
-import cn.ocoop.framework.jdbc.sql.WrapperImpl;
+import cn.ocoop.framework.jdbc.WrapperImpl;
 
 import java.sql.*;
 import java.util.Map;

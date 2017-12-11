@@ -242,14 +242,9 @@ public class RoutingConnection extends AbstractSpayConnection {
         return targetConnection;
     }
 
-    public List<ConnectionWrapper> route(String sql) {
-        return route(routingDataSource.route(sql));
+    public List<ConnectionWrapper> route(Map<String, Object> name_value) {
+        return route(routingDataSource.route(name_value));
     }
-
-    public List<ConnectionWrapper> route(PreparedStatement preparedStatement) {
-        return route(routingDataSource.route(preparedStatement));
-    }
-
 
     private MethodInvocation reference(Class[] paramsType, Object... params) {
         String methodName = Thread.currentThread().getStackTrace()[2].getMethodName();

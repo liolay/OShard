@@ -1,45 +1,43 @@
 package cn.ocoop.framework.jdbc.resultset;
 
-import cn.ocoop.framework.jdbc.parse.order.OrderItem;
-import cn.ocoop.framework.jdbc.parse.order.OrderTypeEnum;
+import cn.ocoop.framework.parse.order.OrderByItem;
+import cn.ocoop.framework.parse.order.OrderByTypeEnum;
+import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by liolay on 2017/12/8.
  */
 @Slf4j
-public class OrderResultSet implements Comparable<OrderResultSet> {
+public class OrderedResultSet implements Comparable<OrderedResultSet> {
     @Getter
-    private final Map<Integer, OrderItem> index_OrderItem;
+    private final Map<OrderByItem,Comparable> orderItem_value;
+    private List<OrderByItem> orderByItems;
     @Getter
     private ResultSet resultSet;
-    private boolean nextMore;
 
-    public OrderResultSet(ResultSet resultSet, Map<Integer, OrderItem> index_OrderItem) throws SQLException {
+    public OrderedResultSet(ResultSet resultSet, List<OrderByItem> orderByItems) throws SQLException {
         this.resultSet = resultSet;
-        this.index_OrderItem = index_OrderItem;
+        this.orderByItems = orderByItems;
+        this.orderItem_value = Maps.newHashMap();
         analyzeOrderByColumnValue();
     }
 
     private void analyzeOrderByColumnValue() throws SQLException {
-        this.nextMore = this.resultSet.next();
-        if (nextMore) {
-            for (Map.Entry<Integer, OrderItem> entry : index_OrderItem.entrySet()) {
-                Comparable object = getObject(entry.getKey() + 1, entry.getValue().getColumnName());
-                entry.getValue().setValue(object);
+        boolean hasMore = this.resultSet.next();
+        if (hasMore) {
+            for (OrderByItem orderByItem : orderByItems) {
+                Comparable object = getObject(orderByItem.getIndex() + 1, orderByItem.getColumnName());
+                orderItem_value.put(orderByItem,object);
             }
         }
         this.resultSet.previous();
-
-    }
-
-    public boolean nextMore() {
-        return this.nextMore;
     }
 
     public boolean next() throws SQLException {
@@ -64,21 +62,19 @@ public class OrderResultSet implements Comparable<OrderResultSet> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public int compareTo(OrderResultSet o) {
-
-        for (Map.Entry<Integer, OrderItem> entry : index_OrderItem.entrySet()) {
-            Comparable before = entry.getValue().getValue();
-            Comparable after = o.getIndex_OrderItem().get(entry.getKey()).getValue();
+    public int compareTo(OrderedResultSet o) {
+        for (Map.Entry<OrderByItem, Comparable> entry : orderItem_value.entrySet()) {
+            Comparable before = entry.getValue();
+            Comparable after = o.getOrderItem_value().get(entry.getKey());
             if (before == null) {
                 if (after == null) {
                     continue;
-                } else {
-                    return -1;
                 }
+                return -1;
             }
             int i = before.compareTo(after);
-            if (entry.getValue().getOrderType() == OrderTypeEnum.ASC && i != 0) return i;
-            if (entry.getValue().getOrderType() == OrderTypeEnum.DESC && i != 0) return -i;
+            if (entry.getKey().getOrderType() == OrderByTypeEnum.ASC && i != 0) return i;
+            if (entry.getKey().getOrderType() == OrderByTypeEnum.DESC && i != 0) return -i;
         }
         return 0;
     }

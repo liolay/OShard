@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.sql;
+package cn.ocoop.framework.jdbc;
 
 import java.sql.SQLException;
 import java.sql.Wrapper;

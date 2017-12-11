@@ -1,6 +1,7 @@
 package cn.ocoop.framework.jdbc.resultset;
 
-import cn.ocoop.framework.jdbc.sql.WrapperImpl;
+
+import cn.ocoop.framework.jdbc.WrapperImpl;
 
 import java.io.InputStream;
 import java.io.Reader;
