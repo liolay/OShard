@@ -1,4 +1,4 @@
-package cn.ocoop.framework.parse.shard.algorithm;
+package cn.ocoop.framework.jdbc.route.algorithm;
 
 import com.google.common.collect.Sets;
 

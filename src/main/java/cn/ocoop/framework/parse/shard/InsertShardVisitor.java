@@ -1,7 +1,7 @@
-package cn.ocoop.framework.parse.shard.extract;
+package cn.ocoop.framework.parse.shard;
 
-import cn.ocoop.framework.parse.shard.extract.value.DynamicShardValue;
-import cn.ocoop.framework.parse.shard.extract.value.ExtractShardValue;
+import cn.ocoop.framework.parse.shard.value.DynamicShardValue;
+import cn.ocoop.framework.parse.shard.value.ExtractShardValue;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLValuableExpr;

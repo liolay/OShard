@@ -1,4 +1,4 @@
-package cn.ocoop.framework.parse.shard.extract;
+package cn.ocoop.framework.parse.shard;
 
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 

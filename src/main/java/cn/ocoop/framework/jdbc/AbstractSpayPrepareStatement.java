@@ -1,7 +1,7 @@
-package cn.ocoop.framework.jdbc.spay;
+package cn.ocoop.framework.jdbc;
 
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
+import cn.ocoop.framework.jdbc.execute.MethodInvocation;
 import cn.ocoop.framework.jdbc.statement.RoutingStatement;
 
 import java.sql.*;

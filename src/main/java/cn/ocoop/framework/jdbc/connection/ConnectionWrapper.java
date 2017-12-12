@@ -1,7 +1,7 @@
 package cn.ocoop.framework.jdbc.connection;
 
+import cn.ocoop.framework.jdbc.AbstractSpayConnection;
 import cn.ocoop.framework.jdbc.datasource.NamedDataSource;
-import cn.ocoop.framework.jdbc.spay.AbstractSpayConnection;
 import lombok.Getter;
 
 import java.sql.*;

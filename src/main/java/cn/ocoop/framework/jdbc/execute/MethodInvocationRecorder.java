@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.execute.invocation;
+package cn.ocoop.framework.jdbc.execute;
 
 import cn.ocoop.framework.util.BeanUtils;
 import com.google.common.collect.Lists;

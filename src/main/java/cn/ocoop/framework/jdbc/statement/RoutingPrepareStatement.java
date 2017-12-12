@@ -1,15 +1,14 @@
 package cn.ocoop.framework.jdbc.statement;
 
+import cn.ocoop.framework.jdbc.AbstractSpayPrepareStatement;
 import cn.ocoop.framework.jdbc.connection.ConnectionWrapper;
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
+import cn.ocoop.framework.jdbc.execute.MethodInvocation;
 import cn.ocoop.framework.jdbc.resultset.ResultSetWrapper;
-import cn.ocoop.framework.jdbc.spay.AbstractSpayPrepareStatement;
-import cn.ocoop.framework.parse.SqlParser;
-import cn.ocoop.framework.parse.shard.extract.value.DynamicShardValue;
-import cn.ocoop.framework.parse.shard.extract.value.ShardValue;
+import cn.ocoop.framework.parse.OrderByParser;
+import cn.ocoop.framework.parse.shard.value.DynamicShardValue;
+import cn.ocoop.framework.parse.shard.value.ShardValue;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +85,7 @@ public class RoutingPrepareStatement extends AbstractSpayPrepareStatement {
 
         if (resultSets.size() <= 0) return null;
         if (resultSets.size() == 1) return resultSets.get(0);
-        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
+        return new ResultSetWrapper(OrderByParser.parse(sql), resultSets).proxy();
     }
 
     @Override
@@ -107,18 +106,12 @@ public class RoutingPrepareStatement extends AbstractSpayPrepareStatement {
     /**
      * @return key:shardKey,value:shardValue
      */
-    private Map<String, Object> analyzeShardValue() {
-        Map<String, Object> shardColumn_value = Maps.newHashMap();
-        Map<String, ShardValue> name_value = SqlParser.analyzeShard(sql);
-        for (Map.Entry<String, ShardValue> shardItem : name_value.entrySet()) {
-            Object shardValue = shardItem.getValue().getValue();
-            if (shardItem.getValue() instanceof DynamicShardValue) {
-                //noinspection SuspiciousMethodCalls
-                shardValue = parameters.get((int) shardItem.getValue().getValue() + 1);
-            }
-            shardColumn_value.put(shardItem.getKey(), shardValue);
+    protected Object resolveShardValue(ShardValue shardValue) {
+        if (shardValue instanceof DynamicShardValue) {
+            //noinspection SuspiciousMethodCalls
+            return parameters.get((int) shardValue.getValue() + 1);
         }
-        return shardColumn_value;
+        return shardValue.getValue();
     }
 
     @Override

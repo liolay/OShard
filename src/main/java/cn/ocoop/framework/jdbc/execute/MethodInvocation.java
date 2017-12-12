@@ -1,4 +1,4 @@
-package cn.ocoop.framework.jdbc.execute.invocation;
+package cn.ocoop.framework.jdbc.execute;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

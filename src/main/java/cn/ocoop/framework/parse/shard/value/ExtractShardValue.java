@@ -1,4 +1,4 @@
-package cn.ocoop.framework.parse.shard.extract.value;
+package cn.ocoop.framework.parse.shard.value;
 
 import lombok.Getter;
 import lombok.Setter;

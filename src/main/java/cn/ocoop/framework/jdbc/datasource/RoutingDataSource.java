@@ -2,10 +2,11 @@ package cn.ocoop.framework.jdbc.datasource;
 
 import cn.ocoop.framework.jdbc.WrapperImpl;
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
-import cn.ocoop.framework.parse.SqlParser;
-import cn.ocoop.framework.parse.shard.algorithm.ShardAlgorithm;
+import cn.ocoop.framework.jdbc.execute.MethodInvocation;
+import cn.ocoop.framework.jdbc.execute.MethodInvocationRecorder;
+import cn.ocoop.framework.jdbc.route.ForceRouter;
+import cn.ocoop.framework.jdbc.route.algorithm.ShardAlgorithm;
+import cn.ocoop.framework.parse.ShardColumnParser;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 
@@ -14,10 +15,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -33,7 +31,7 @@ public class RoutingDataSource extends WrapperImpl implements DataSource {
 
     public RoutingDataSource(Map<String, DataSource> dataSources, Set<String> shardColumn, ShardAlgorithm shardAlgorithm) {
         this.dataSources = dataSources;
-        SqlParser.setShardColumn(shardColumn);
+        ShardColumnParser.init(shardColumn);
         this.shardAlgorithm = shardAlgorithm;
     }
 
@@ -86,8 +84,13 @@ public class RoutingDataSource extends WrapperImpl implements DataSource {
     }
 
     public List<NamedDataSource> route(Map<String, Object> shardColumn_value) {
+        Map<String, Object> shardValue = new HashMap<>(shardColumn_value);
+        if (!ForceRouter.getInstance().get().isEmpty()) {
+            shardValue.putAll(ForceRouter.getInstance().get());
+        }
+
         List<NamedDataSource> routedDataSource = Lists.newArrayList();
-        Collection<String> dataSourceNames = shardAlgorithm.shard(dataSources.keySet(), shardColumn_value);
+        Collection<String> dataSourceNames = shardAlgorithm.shard(dataSources.keySet(), shardValue);
         for (String dataSourceName : dataSourceNames) {
             routedDataSource.add(new NamedDataSource(dataSourceName, dataSources.get(dataSourceName)));
         }

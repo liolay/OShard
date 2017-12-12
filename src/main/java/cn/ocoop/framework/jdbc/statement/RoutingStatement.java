@@ -1,14 +1,15 @@
 package cn.ocoop.framework.jdbc.statement;
 
+import cn.ocoop.framework.jdbc.AbstractSpayStatement;
 import cn.ocoop.framework.jdbc.connection.ConnectionWrapper;
 import cn.ocoop.framework.jdbc.connection.RoutingConnection;
 import cn.ocoop.framework.jdbc.exception.MergedSQLException;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
+import cn.ocoop.framework.jdbc.execute.MethodInvocation;
+import cn.ocoop.framework.jdbc.execute.MethodInvocationRecorder;
 import cn.ocoop.framework.jdbc.resultset.ResultSetWrapper;
-import cn.ocoop.framework.jdbc.spay.AbstractSpayStatement;
-import cn.ocoop.framework.parse.SqlParser;
-import cn.ocoop.framework.parse.shard.extract.value.ShardValue;
+import cn.ocoop.framework.parse.OrderByParser;
+import cn.ocoop.framework.parse.ShardColumnParser;
+import cn.ocoop.framework.parse.shard.value.ShardValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
@@ -58,13 +59,17 @@ public class RoutingStatement extends AbstractSpayStatement {
     /**
      * @return key:shardKey,value:shardValue
      */
-    private Map<String, Object> analyzeShardValue() {
+    protected Map<String, Object> analyzeShardValue() {
         Map<String, Object> shardColumn_value = Maps.newHashMap();
-        Map<String, ShardValue> name_value = SqlParser.analyzeShard(sql);
+        Map<String, ShardValue> name_value = ShardColumnParser.parse(sql);
         for (Map.Entry<String, ShardValue> shardItem : name_value.entrySet()) {
-            shardColumn_value.put(shardItem.getKey(), shardItem.getValue().getValue());
+            shardColumn_value.put(shardItem.getKey(), resolveShardValue(shardItem.getValue()));
         }
         return shardColumn_value;
+    }
+
+    protected Object resolveShardValue(ShardValue value) {
+        return value.getValue();
     }
 
     @Override
@@ -85,7 +90,7 @@ public class RoutingStatement extends AbstractSpayStatement {
         }
         if (resultSets.size() <= 0) return null;
         if (resultSets.size() == 1) return resultSets.get(0);
-        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
+        return new ResultSetWrapper(OrderByParser.parse(sql), resultSets).proxy();
     }
 
     private int executeUpdate(String sql, Function<Statement, Integer> update) {
@@ -316,7 +321,7 @@ public class RoutingStatement extends AbstractSpayStatement {
         }
         if (resultSets.size() <= 0) return null;
         if (resultSets.size() == 1) return resultSets.get(0);
-        return new ResultSetWrapper(SqlParser.parseOrderBy(sql), resultSets).proxy();
+        return new ResultSetWrapper(OrderByParser.parse(sql), resultSets).proxy();
     }
 
     @Override

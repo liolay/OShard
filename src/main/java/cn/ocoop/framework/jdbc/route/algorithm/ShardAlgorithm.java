@@ -1,4 +1,4 @@
-package cn.ocoop.framework.parse.shard.algorithm;
+package cn.ocoop.framework.jdbc.route.algorithm;
 
 import java.util.Collection;
 import java.util.Map;

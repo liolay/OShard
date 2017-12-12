@@ -1,6 +1,6 @@
 package cn.ocoop.framework.parse;
 
-import cn.ocoop.framework.parse.shard.extract.value.ShardValue;
+import cn.ocoop.framework.parse.shard.value.ShardValue;
 import org.junit.Assert;
 import org.junit.Test;
 

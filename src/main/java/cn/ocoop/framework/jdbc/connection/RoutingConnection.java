@@ -1,11 +1,11 @@
 package cn.ocoop.framework.jdbc.connection;
 
+import cn.ocoop.framework.jdbc.AbstractSpayConnection;
 import cn.ocoop.framework.jdbc.datasource.NamedDataSource;
 import cn.ocoop.framework.jdbc.datasource.RoutingDataSource;
 import cn.ocoop.framework.jdbc.exception.MergedSQLException;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocation;
-import cn.ocoop.framework.jdbc.execute.invocation.MethodInvocationRecorder;
-import cn.ocoop.framework.jdbc.spay.AbstractSpayConnection;
+import cn.ocoop.framework.jdbc.execute.MethodInvocation;
+import cn.ocoop.framework.jdbc.execute.MethodInvocationRecorder;
 import cn.ocoop.framework.jdbc.statement.RoutingPrepareStatement;
 import cn.ocoop.framework.jdbc.statement.RoutingStatement;
 import com.google.common.collect.Lists;
@@ -23,7 +23,7 @@ import java.util.Map;
 public class RoutingConnection extends AbstractSpayConnection {
     @Getter
     private RoutingDataSource routingDataSource;
-    private Map<String, ConnectionWrapper> dataSourceId_connection = Maps.newHashMap();
+    private Map<String, ConnectionWrapper> dataSourceId_connection = Maps.newConcurrentMap();
     private MethodInvocationRecorder invocationRecorder = new MethodInvocationRecorder();
     private MethodInvocation createMethodInvocation;
     private boolean autoCommit = true;
@@ -148,13 +148,14 @@ public class RoutingConnection extends AbstractSpayConnection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        ConnectionWrapper connection = null;
-        if (dataSourceId_connection.isEmpty()) {
+        ConnectionWrapper connection = dataSourceId_connection.values().iterator().next();
+        if (connection == null) {
             Map.Entry<String, DataSource> dataSourceEntry = routingDataSource.getDataSources().entrySet().iterator().next();
             NamedDataSource namedDataSource = new NamedDataSource(dataSourceEntry.getKey(), dataSourceEntry.getValue());
-            Connection orgConnection = (Connection) createMethodInvocation.invoke(namedDataSource);
-            connection = new ConnectionWrapper(namedDataSource, orgConnection);
+
+            connection = new ConnectionWrapper(namedDataSource, (Connection) createMethodInvocation.invoke(namedDataSource));
             invocationRecorder.replay(connection);
+
             ConnectionWrapper existConnection = dataSourceId_connection.putIfAbsent(namedDataSource.getName(), connection);
             if (existConnection != null) {
                 connection = existConnection;
