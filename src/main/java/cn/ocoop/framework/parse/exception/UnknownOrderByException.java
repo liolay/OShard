@@ -3,8 +3,8 @@ package cn.ocoop.framework.parse.exception;
 /**
  * Created by liolay on 2017/12/8.
  */
-public class UnKnownOrderByException extends RuntimeException {
-    public UnKnownOrderByException(String message) {
+public class UnknownOrderByException extends RuntimeException {
+    public UnknownOrderByException(String message) {
         super(message);
     }
 

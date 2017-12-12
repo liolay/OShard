@@ -1,6 +1,6 @@
 package cn.ocoop.framework.parse.order;
 
-import cn.ocoop.framework.parse.exception.UnKnownOrderByException;
+import cn.ocoop.framework.parse.exception.UnknownOrderByException;
 import cn.ocoop.framework.parse.select.SelectItem;
 import cn.ocoop.framework.parse.select.SelectItemVisitor;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -91,7 +91,7 @@ public class OrderByVisitor extends MySqlASTVisitorAdapter {
                 }
 
                 if (!matched) {
-                    throw new UnKnownOrderByException("order-by column's name '" + orderItem.getColumnName() + "' could not be found at neither `select items` nor `select items alias`");
+                    throw new UnknownOrderByException("order-by column's name '" + orderItem.getColumnName() + "' could not be found at neither `select items` nor `select items alias`");
                 }
             }
         }
